@@ -1,745 +1,518 @@
-# Spotify Clone Application
+# 🎵 Spotify Clone API
 
-## 📝 აღწერა
-მუსიკის სტრიმინგის პლატფორმა იუზერების ავთენტიფიკაციით, playlist-ების მართვით და რეკომენდაციებით.
+Complete REST API for a Spotify-like music streaming application with role-based access control, playlist management, and personalized recommendations.
 
-## 🛠 ტექნოლოგიები
-- **Java 17**
-- **Spring Boot 3.2.0**
-- **PostgreSQL 14+**
-- **JWT Authentication**
-- **JavaMailSender**
-- **JUnit 5 & Mockito**
-- **Maven**
+## 📋 Table of Contents
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Installation & Setup](#installation--setup)
+- [Testing Instructions](#testing-instructions)
+- [API Documentation](#api-documentation)
+- [Architecture](#architecture)
+- [Database Schema](#database-schema)
+- [Project Structure](#project-structure)
 
-## 📋 წინა პირობები
-- JDK 17+
-- PostgreSQL 14+
-- Maven 3.8+
-- Gmail ანგარიში (email verification-სთვის)
+## ✨ Features
 
-## 🚀 დაინსტალირების ინსტრუქცია
+### User Management
+- ✅ User registration with email verification (6-digit code)
+- ✅ JWT-based authentication
+- ✅ Role-based access control (LISTENER, ARTIST, ADMIN)
+- ✅ Account status management (PENDING, ACTIVE, BLOCKED)
 
-### 1. Database Setup
-```sql
--- PostgreSQL-ში შექმენი database
-CREATE DATABASE spotify_clone;
+### Music Management
+- ✅ Upload music tracks (ARTIST only)
+- ✅ Search music by title or artist (partial matching)
+- ✅ Genre classification
+- ✅ Listening history tracking
 
--- შექმენი user
-CREATE USER spotify_user WITH PASSWORD 'spotify_password';
+### Album Management
+- ✅ Create and manage albums (ARTIST only)
+- ✅ Associate tracks with albums
+- ✅ View albums with all tracks
 
--- მიანიჭე უფლებები
-GRANT ALL PRIVILEGES ON DATABASE spotify_clone TO spotify_user;
-```
+### Playlist Management
+- ✅ Create personal playlists
+- ✅ Add/remove songs from playlists
+- ✅ System-generated recommendation playlists
+- ✅ Protected system playlists
 
-### 2. Gmail App Password Setup
-1. გადადი [Google Account Security](https://myaccount.google.com/security)
-2. ჩართე 2-Step Verification
-3. გადადი "App passwords" სექციაში
-4. შექმენი ახალი App Password "Mail" კატეგორიისთვის
-5. დააკოპირე გენერირებული პაროლი
+### Recommendations
+- ✅ Artist profile with similar artists (genre-based)
+- ✅ Personalized playlist generation based on listening history
+- ✅ Top 3 genre-based recommendations
 
-### 3. Application Configuration
-შექმენი `src/main/resources/application.properties`:
-```properties
-# Database
-spring.datasource.url=jdbc:postgresql://localhost:5432/spotify_clone
-spring.datasource.username=spotify_user
-spring.datasource.password=spotify_password
+### Statistics
+- ✅ Weekly listening statistics
+- ✅ Unique listener tracking
+- ✅ Automated weekly reports (scheduled)
 
-# Email (შეცვალე შენი მონაცემებით)
-spring.mail.username=your_email@gmail.com
-spring.mail.password=your_app_password_here
+### Admin Features
+- ✅ User management (view, update, block, unblock, delete)
+- ✅ Music and album moderation
+- ✅ Filter users by role/status
 
-# JWT (გენერირე შენი secure key)
-jwt.secret=5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-jwt.expiration=86400000
-```
+## 🛠 Tech Stack
 
-### 4. Build & Run
+- **Framework**: Spring Boot 3.x
+- **Database**: PostgreSQL
+- **Security**: Spring Security + JWT
+- **Email**: JavaMailSender (Gmail SMTP)
+- **API Documentation**: SpringDoc OpenAPI (Swagger)
+- **Testing**: JUnit 5 + Mockito
+- **Build Tool**: Maven/Gradle
+
+## 📦 Prerequisites
+
+- Java 17 or higher
+- PostgreSQL 12 or higher
+- Maven 3.6+ or Gradle 7+
+- Gmail account for email verification (with App Password)
+
+## 🚀 Installation & Setup
+
+### 1. Clone the Repository
 ```bash
-# Clone repository
 git clone <repository-url>
-cd spotify-clone
+cd spotify-clone-api
+```
 
-# Build project
+### 2. Create PostgreSQL Database
+```sql
+CREATE DATABASE spotify_clone;
+```
+
+### 3. Configure Application Properties
+
+Create `application.yml` or `application.properties`:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spotify_clone
+    username: your_db_username
+    password: your_db_password
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your_email@gmail.com
+    password: your_gmail_app_password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  secret: your_secret_key_here_min_256_bits
+  expiration: 86400000  # 24 hours
+
+server:
+  port: 8080
+```
+
+### 4. Setup Gmail App Password
+
+1. Go to Google Account Settings
+2. Security → 2-Step Verification → App passwords
+3. Generate app password for "Mail"
+4. Use this password in `application.yml`
+
+### 5. Build and Run
+
+**Using Maven:**
+```bash
 mvn clean install
-
-# Run application
 mvn spring-boot:run
 ```
 
-აპლიკაცია გაეშვება: `http://localhost:8080`
+**Using Gradle:**
+```bash
+./gradlew clean build
+./gradlew bootRun
+```
 
-## 👤 საწყისი Admin-ის შექმნა
+### 6. Create Admin User (Manual)
 
-Admin-ის შესაქმნელად, პირდაპირ ბაზაში ჩაამატე:
+Connect to PostgreSQL and run:
 ```sql
--- BCrypt encoded "Admin123!" password
-INSERT INTO users (username, email, password, first_name, last_name, role, status, created_at, updated_at, is_deleted)
+INSERT INTO users (username, email, password, first_name, last_name, role, status, is_deleted, created_at, updated_at)
 VALUES (
-    'admin', 
-    'admin@spotify.com', 
-    '$2a$10$xqW1hHCnJ7fE8FwV5QW8VuP6YxK8n.vZ2tQ7hP8RmTqN3kJ8nK4Ee', 
-    'Admin', 
-    'User', 
-    'ADMIN', 
-    'ACTIVE', 
-    NOW(), 
-    NOW(), 
-    false
+    'admin',
+    'admin@spotify.com',
+    '$2a$10$encoded_password_here',  -- Use BCrypt encoder
+    'Admin',
+    'User',
+    'ADMIN',
+    'ACTIVE',
+    false,
+    NOW(),
+    NOW()
 );
 ```
 
-**Admin Credentials:**
-- Email: `admin@spotify.com`
-- Password: `Admin123!`
-
-## 📚 API Documentation
-
-### 🔐 Authentication Endpoints
-
-#### 1. რეგისტრაცია
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser",
-  "email": "user@example.com",
-  "password": "Password123",
-  "firstName": "Test",
-  "lastName": "User",
-  "role": "LISTENER"  // or "ARTIST"
-}
+Or encode password in Java:
+```java
+BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+String encodedPassword = encoder.encode("admin123");
 ```
 
-#### 2. Email Verification
-```http
-POST /api/auth/verify-email
-Content-Type: application/json
+## 🧪 Testing Instructions
 
-{
-  "email": "user@example.com",
-  "verificationCode": "123456"
-}
-```
+### Automated Tests
 
-#### 3. Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "Password123"
-}
-
-Response:
-{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "userId": 1,
-  "username": "testuser",
-  "role": "LISTENER"
-}
-```
-
-### 🎵 Music Endpoints
-
-#### მუსიკის ძებნა
-```http
-GET /api/music/search?query=rock&page=0&size=20
-Authorization: Bearer {token}
-```
-
-#### მუსიკის მოსმენა (listening history ჩაიწერება)
-```http
-GET /api/music/{id}
-Authorization: Bearer {token}
-```
-
-#### მუსიკის ატვირთვა (ARTIST only)
-```http
-POST /api/music
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "title": "New Song",
-  "albumId": 1,  // optional
-  "genre": "ROCK",
-  "durationSeconds": 240,
-  "fileUrl": "http://example.com/song.mp3"
-}
-```
-
-### 💿 Album Endpoints
-
-#### ალბომის შექმნა (ARTIST only)
-```http
-POST /api/albums
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "title": "My Album",
-  "releaseDate": "2025-01-01",
-  "coverImageUrl": "http://example.com/cover.jpg"
-}
-```
-
-#### ალბომის ნახვა
-```http
-GET /api/albums/{id}
-Authorization: Bearer {token}
-```
-
-### 📋 Playlist Endpoints
-
-#### Playlist-ის შექმნა
-```http
-POST /api/playlists
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "name": "My Playlist",
-  "description": "My favorite songs"
-}
-```
-
-#### ჩემი Playlists
-```http
-GET /api/playlists/my?page=0&size=20
-Authorization: Bearer {token}
-```
-
-#### სიმღერის დამატება Playlist-ში
-```http
-POST /api/playlists/{playlistId}/songs
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "musicId": 5
-}
-```
-
-#### სიმღერის წაშლა Playlist-იდან
-```http
-DELETE /api/playlists/{playlistId}/songs/{musicId}
-Authorization: Bearer {token}
-```
-
-### 🎤 Artist & Recommendations
-
-#### არტისტის პროფილი (similar artists-ით)
-```http
-GET /api/artists/{artistId}
-Authorization: Bearer {token}
-```
-
-#### რეკომენდირებული Playlists
-```http
-GET /api/recommendations/playlists
-Authorization: Bearer {token}
-```
-
-### 👑 Admin Endpoints
-
-#### მომხმარებლების სია
-```http
-GET /api/admin/users?page=0&size=20&status=ACTIVE
-Authorization: Bearer {admin-token}
-```
-
-#### იუზერის დაბლოკვა
-```http
-PUT /api/admin/users/{userId}/block
-Authorization: Bearer {admin-token}
-```
-
-#### იუზერის წაშლა
-```http
-DELETE /api/admin/users/{userId}
-Authorization: Bearer {admin-token}
-```
-
-#### მუსიკის წაშლა
-```http
-DELETE /api/admin/music/{musicId}
-Authorization: Bearer {admin-token}
-```
-
-## 🧪 Testing
-
-### Unit Tests-ის გაშვება
+Run unit tests:
 ```bash
 mvn test
+# or
+./gradlew test
 ```
 
-### Coverage Report-ის გენერირება
+Check code coverage (minimum 80% for service classes):
+```bash
+mvn jacoco:report
+# Report: target/site/jacoco/index.html
+```
+
+### Manual Testing with Swagger
+
+1. **Access Swagger UI**
+   ```
+   http://localhost:8080/swagger-ui.html
+   ```
+
+2. **Test Authentication Flow**
+
+   a) **Register as LISTENER**:
+    - POST `/api/auth/register`
+    - Body:
+   ```json
+   {
+     "username": "john_listener",
+     "email": "john@example.com",
+     "password": "SecurePass123",
+     "firstName": "John",
+     "lastName": "Doe",
+     "role": "LISTENER"
+   }
+   ```
+
+   b) **Check Email** for 6-digit verification code
+
+   c) **Verify Email**:
+    - POST `/api/auth/verify-email`
+    - Body:
+   ```json
+   {
+     "email": "john@example.com",
+     "verificationCode": "123456"
+   }
+   ```
+
+   d) **Login**:
+    - POST `/api/auth/login`
+    - Body:
+   ```json
+   {
+     "email": "john@example.com",
+     "password": "SecurePass123"
+   }
+   ```
+    - Copy the JWT token from response
+
+   e) **Authorize in Swagger**:
+    - Click "Authorize" button (top right)
+    - Enter: `Bearer <your_token>`
+    - Click "Authorize"
+
+3. **Test LISTENER Features**
+
+    - GET `/api/music/search?query=rock` - Search music
+    - GET `/api/music/{id}` - Get music (records listening history)
+    - POST `/api/playlists` - Create playlist
+    - POST `/api/playlists/{playlistId}/songs/{musicId}` - Add song
+    - POST `/api/recommendations/generate-playlists` - Generate recommendations
+
+4. **Test ARTIST Features**
+
+   a) Register as ARTIST (repeat step 2 with `"role": "ARTIST"`)
+
+   b) Test artist endpoints:
+    - POST `/api/albums` - Create album
+    - POST `/api/music` - Upload music
+    - GET `/api/albums/artist/{artistId}` - View your albums
+    - GET `/api/recommendations/artists/{artistId}` - View similar artists
+
+5. **Test ADMIN Features**
+
+   Login as admin, then:
+    - GET `/api/admin/users` - View all users
+    - GET `/api/admin/users/role/ARTIST` - Filter by role
+    - POST `/api/admin/users/{id}/block` - Block user
+    - DELETE `/api/admin/music/{id}` - Delete any music
+    - DELETE `/api/admin/albums/{id}` - Delete any album
+
+### Testing Search Functionality
+
+Test partial matching:
+```
+GET /api/music/search?query=fra
+```
+Should return songs with "afraid", "fragment", "Franco", etc.
+
+### Testing Weekly Statistics
+
+The scheduled job runs every Friday at 23:59. For testing:
+
+1. Change `@Scheduled` annotation in `StatisticsService`:
+   ```java
+   @Scheduled(fixedRate = 60000)  // Every 1 minute
+   ```
+
+2. Add some listening history by getting music
+3. Wait for schedule to run
+4. Check `weekly_statistics` table
+
+## 📖 API Documentation
+
+### Base URL
+```
+http://localhost:8080/api
+```
+
+### Swagger UI
+```
+http://localhost:8080/swagger-ui.html
+```
+
+### OpenAPI JSON
+```
+http://localhost:8080/api-docs
+```
+
+### Main Endpoints
+
+| Category | Method | Endpoint | Auth Required | Role |
+|----------|--------|----------|---------------|------|
+| **Auth** | POST | `/auth/register` | No | - |
+| | POST | `/auth/verify-email` | No | - |
+| | POST | `/auth/login` | No | - |
+| **Music** | POST | `/music` | Yes | ARTIST |
+| | GET | `/music/{id}` | Optional | - |
+| | GET | `/music/search` | No | - |
+| | PUT | `/music/{id}` | Yes | ARTIST (own) |
+| | DELETE | `/music/{id}` | Yes | ARTIST (own) |
+| **Albums** | POST | `/albums` | Yes | ARTIST |
+| | GET | `/albums/{id}` | No | - |
+| | GET | `/albums/artist/{artistId}` | No | - |
+| | PUT | `/albums/{id}` | Yes | ARTIST (own) |
+| | DELETE | `/albums/{id}` | Yes | ARTIST (own) |
+| **Playlists** | POST | `/playlists` | Yes | ALL |
+| | GET | `/playlists/my` | Yes | ALL |
+| | POST | `/playlists/{id}/songs/{musicId}` | Yes | Owner |
+| | DELETE | `/playlists/{id}/songs/{musicId}` | Yes | Owner |
+| **Recommendations** | GET | `/recommendations/artists/{id}` | No | - |
+| | POST | `/recommendations/generate-playlists` | Yes | ALL |
+| **Admin** | GET | `/admin/users` | Yes | ADMIN |
+| | PUT | `/admin/users/{id}` | Yes | ADMIN |
+| | POST | `/admin/users/{id}/block` | Yes | ADMIN |
+| | DELETE | `/admin/music/{id}` | Yes | ADMIN |
+
+## 🏗 Architecture
+
+### Design Patterns Used
+- **Repository Pattern**: Data access abstraction
+- **Service Layer Pattern**: Business logic separation
+- **DTO Pattern**: Data transfer objects for API
+- **Builder Pattern**: Entity construction (Lombok)
+- **Strategy Pattern**: Role-based authorization
+
+### Security
+- JWT token-based authentication
+- BCrypt password encryption
+- Role-based method security
+- Soft delete pattern for data integrity
+
+### Scheduling
+- Weekly statistics generation (Fridays 23:59)
+- Expired verification code cleanup (hourly)
+
+## 💾 Database Schema
+
+### Core Tables
+- `users` - User accounts with roles and status
+- `music` - Music tracks
+- `albums` - Music albums
+- `playlists` - User playlists
+- `playlist_music` - Many-to-many playlist-music relation
+- `listening_history` - User listening records
+- `weekly_statistics` - Aggregated weekly stats
+
+### Key Relationships
+- User → Music (Artist uploads)
+- User → Album (Artist creates)
+- User → Playlist (User owns)
+- User → ListeningHistory (User listens)
+- Music → Album (Track belongs to)
+- Playlist ↔ Music (Many-to-many)
+
+## 📁 Project Structure
+
+```
+src/main/java/com/spotifyapp/
+├── config/
+│   ├── SecurityConfig.java
+│   └── SwaggerConfig.java
+├── controller/
+│   ├── AuthController.java
+│   ├── MusicController.java
+│   ├── AlbumController.java
+│   ├── PlaylistController.java
+│   ├── RecommendationController.java
+│   └── AdminController.java
+├── dto/
+│   ├── auth/
+│   ├── music/
+│   ├── album/
+│   ├── playlist/
+│   ├── user/
+│   └── artist/
+├── exception/
+│   ├── GlobalExceptionHandler.java
+│   └── custom exceptions...
+├── model/
+│   ├── entity/
+│   └── enums/
+├── repository/
+├── security/
+│   ├── JwtUtil.java
+│   ├── JwtAuthenticationFilter.java
+│   ├── UserDetailsImpl.java
+│   └── UserDetailsServiceImpl.java
+├── service/
+│   ├── AuthService.java
+│   ├── MusicService.java
+│   ├── AlbumService.java
+│   ├── PlaylistService.java
+│   ├── RecommendationService.java
+│   ├── UserService.java
+│   ├── EmailService.java
+│   └── StatisticsService.java
+└── SpotifyAppApplication.java
+
+src/test/java/com/spotifyapp/service/
+├── AuthServiceTest.java
+├── MusicServiceTest.java
+├── AlbumServiceTest.java
+├── PlaylistServiceTest.java
+├── RecommendationServiceTest.java
+├── UserServiceTest.java
+├── EmailServiceTest.java
+└── StatisticsServiceTest.java
+```
+
+## 🔍 Key Features Explained
+
+### Email Verification
+- 6-digit code generated on registration
+- 15-minute expiration
+- Sent via Gmail SMTP
+- Required before login
+
+### Search Functionality
+Partial matching example:
+```sql
+SELECT * FROM music 
+WHERE LOWER(title) LIKE LOWER('%fra%') 
+   OR LOWER(artist_name) LIKE LOWER('%fra%')
+```
+
+### Recommendation System
+
+**Similar Artists:**
+- Based on shared genres
+- Sorted by number of common genres
+- Limited to top 10
+
+**Personalized Playlists:**
+- Analyzes last 3 months listening history
+- Identifies top 3 genres
+- Creates playlist for each genre with 20 songs
+- Replaces old system-generated playlists
+
+### Statistics Tracking
+- Records every music fetch as a "listen"
+- Aggregates weekly (Monday-Sunday)
+- Counts total listens and unique listeners
+- Runs automatically via scheduled task
+
+## 🐛 Troubleshooting
+
+### Email Not Sending
+- Check Gmail App Password is correct
+- Enable 2-Step Verification in Google Account
+- Verify SMTP settings in application.yml
+
+### JWT Token Issues
+- Ensure secret key is at least 256 bits
+- Check token expiration time
+- Verify "Bearer " prefix in Authorization header
+
+### Database Connection Issues
+- Verify PostgreSQL is running
+- Check database credentials
+- Ensure database exists
+
+### Tests Failing
+- Run `mvn clean test` to clear cache
+- Check H2 in-memory database configuration for tests
+- Verify mock setups in test classes
+
+## 📝 Git Workflow
+
+This project follows Git Flow:
+- `main` - Production-ready code
+- `develop` - Integration branch
+- `feature/*` - Feature branches
+- `hotfix/*` - Urgent fixes
+
+## 📊 Code Coverage
+
+Target: **80%+ coverage for service classes**
+
+Generate report:
 ```bash
 mvn clean test jacoco:report
 ```
 
-Coverage report იხილე: `target/site/jacoco/index.html`
+View report: `target/site/jacoco/index.html`
 
-**მოთხოვნა:** Service კლასების coverage უნდა იყოს მინიმუმ 80%
+## 🤝 Contributing
 
-## 📊 კოდის სტრუქტურა
-```
-src/main/java/com/spotify/clone/
-├── config/              # Security & Application Config
-├── controller/          # REST Controllers
-├── dto/                 # Data Transfer Objects
-├── entity/              # JPA Entities
-├── enums/               # Enumerations
-├── exception/           # Custom Exceptions & Handlers
-├── repository/          # JPA Repositories
-├── security/            # JWT & Security Classes
-└── service/             # Business Logic Services
-
-src/test/java/           # Unit Tests
-```
-
-## ⏰ Scheduled Tasks
-
-### 1. Weekly Statistics Generation
-- **გაშვება:** ყოველ პარასკევს 23:59-ზე
-- **ფუნქცია:** აგენერირებს კვირის სტატისტიკას ყველა სიმღერისთვის
-- **Testing:** შეცვალე `@Scheduled(fixedRate = 300000)` - ყოველ 5 წუთში
-
-### 2. Expired Verification Codes Cleanup
-- **გაშვება:** ყოველ საათში
-- **ფუნქცია:** შლის ვერიფიცირებულ იუზერებს 24 საათის შემდეგ
-
-## 🔒 უსაფრთხოება
-
-- პაროლები hash-ირებულია BCrypt-ით
-- JWT tokens ვალიდურია 24 საათი
-- Email verification სავალდებულოა
-- Role-based access control (RBAC)
-- Soft delete strategy ყველა ენტიტისთვის
-
-## 🐛 გასატესტი Scenarios
-
-### 1. User Registration Flow
-```bash
-# 1. Register
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "email": "test@example.com",
-    "password": "Password123",
-    "firstName": "Test",
-    "lastName": "User",
-    "role": "LISTENER"
-  }'
-
-# 2. Check email for verification code
-
-# 3. Verify
-curl -X POST http://localhost:8080/api/auth/verify-email \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "verificationCode": "123456"
-  }'
-
-# 4. Login
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "Password123"
-  }'
-```
-
-### 2. Artist Music Upload Flow
-```bash
-# 1. Register as Artist
-# 2. Create Album
-curl -X POST http://localhost:8080/api/albums \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "My First Album",
-    "releaseDate": "2025-01-15"
-  }'
-
-# 3. Upload Music
-curl -X POST http://localhost:8080/api/music \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "My First Song",
-    "albumId": 1,
-    "genre": "ROCK",
-    "durationSeconds": 240,
-    "fileUrl": "http://example.com/song.mp3"
-  }'
-```
-
-### 3. Playlist Management Flow
-```bash
-# 1. Create Playlist
-curl -X POST http://localhost:8080/api/playlists \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Rock Collection",
-    "description": "Best rock songs"
-  }'
-
-# 2. Add Song to Playlist
-curl -X POST http://localhost:8080/api/playlists/1/songs \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{"musicId": 5}'
-
-# 3. View Playlist
-curl -X GET http://localhost:8080/api/playlists/1 \
-  -H "Authorization: Bearer {token}"
-```
-
-### 4. Search & Listen Flow
-```bash
-# 1. Search Music
-curl -X GET "http://localhost:8080/api/music/search?query=rock" \
-  -H "Authorization: Bearer {token}"
-
-# 2. Listen to Music (records history)
-curl -X GET http://localhost:8080/api/music/5 \
-  -H "Authorization: Bearer {token}"
-
-# 3. Get Recommendations
-curl -X GET http://localhost:8080/api/recommendations/playlists \
-  -H "Authorization: Bearer {token}"
-```
-
-### 5. Admin Operations
-```bash
-# 1. Get All Users
-curl -X GET "http://localhost:8080/api/admin/users?page=0&size=20" \
-  -H "Authorization: Bearer {admin-token}"
-
-# 2. Block User
-curl -X PUT http://localhost:8080/api/admin/users/5/block \
-  -H "Authorization: Bearer {admin-token}"
-
-# 3. Delete Music
-curl -X DELETE http://localhost:8080/api/admin/music/10 \
-  -H "Authorization: Bearer {admin-token}"
-```
-
-## 🎯 ფიჩრების დამოწმება
-
-### ✅ Authentication & Authorization
-- [x] რეგისტრაცია LISTENER/ARTIST როლებით
-- [x] Email verification 6-digit კოდით
-- [x] JWT-based login
-- [x] Role-based access control
-- [x] Admin-ის ხელით დამატება ბაზაში
-
-### ✅ User Management (Admin)
-- [x] მომხმარებლების სია pagination-ით
-- [x] იუზერის ინფორმაციის განახლება
-- [x] იუზერის წაშლა (soft delete)
-- [x] იუზერის დაბლოკვა/განბლოკვა
-- [x] ფილტრაცია status-ის და role-ის მიხედვით
-
-### ✅ Music Management
-- [x] მუსიკის ატვირთვა (ARTIST only)
-- [x] მუსიკის CRUD ოპერაციები
-- [x] მუსიკის ძებნა სახელით/ავტორით (partial match)
-- [x] Permission checks (მხოლოდ საკუთარი მუსიკის რედაქტირება)
-
-### ✅ Album Management
-- [x] ალბომის შექმნა (ARTIST only)
-- [x] ალბომის CRUD ოპერაციები
-- [x] მუსიკის დაკავშირება ალბომთან
-- [x] Permission checks
-
-### ✅ Playlist Management
-- [x] Playlist-ის შექმნა
-- [x] Playlist-ის CRUD ოპერაციები
-- [x] სიმღერების დამატება/წაშლა
-- [x] Permission checks (მხოლოდ საკუთარი playlists)
-- [x] System-generated playlists-ის დაცვა
-
-### ✅ Statistics & Recommendations
-- [x] Listening history-ს ჩაწერა
-- [x] Weekly statistics generation (scheduled job)
-- [x] Similar artists-ის გენერირება ჟანრის მიხედვით
-- [x] Personalized playlists ტოპ 3 ჟანრისთვის
-
-### ✅ Search Functionality
-- [x] Fuzzy search (partial match)
-- [x] ძებნა სათაურით
-- [x] ძებნა ავტორით
-- [x] Pagination support
-
-## 🔄 Git Flow სტრატეგია
-
-### Branch სტრუქტურა
-```
-main (production)
-  │
-  └── develop
-       ├── feature/user-authentication
-       ├── feature/admin-panel
-       ├── feature/music-management
-       ├── feature/playlist-functionality
-       ├── feature/search
-       ├── feature/statistics
-       └── feature/recommendations
-```
-
-### Commit Convention
-```
-feat: Add user registration endpoint
-fix: Fix playlist permission check
-test: Add unit tests for UserService
-refactor: Optimize music search query
-docs: Update README with API examples
-chore: Update dependencies
-```
-
-### Workflow
-1. Feature branch-ის შექმნა develop-იდან
-2. ფიჩრის იმპლემენტაცია tests-თან ერთად
-3. Coverage 80%+ უზრუნველყოფა
-4. Pull Request-ის შექმნა develop-ში
-5. Review და merge
-6. Release: develop → main
-
-## 📦 Dependencies
-
-### Core Dependencies
-```xml
-<!-- Spring Boot Web -->
-spring-boot-starter-web
-
-<!-- Spring Boot Data JPA -->
-spring-boot-starter-data-jpa
-
-<!-- Spring Boot Security -->
-spring-boot-starter-security
-
-<!-- Spring Boot Validation -->
-spring-boot-starter-validation
-
-<!-- Spring Boot Mail -->
-spring-boot-starter-mail
-
-<!-- PostgreSQL Driver -->
-postgresql
-
-<!-- JWT -->
-jjwt-api, jjwt-impl, jjwt-jackson
-
-<!-- Lombok -->
-lombok
-
-<!-- Testing -->
-spring-boot-starter-test
-spring-security-test
-```
-
-## 🐞 ცნობილი Issues და გადაწყვეტები
-
-### Issue 1: Email არ იგზავნება
-**გადაწყვეტა:**
-1. დარწმუნდი რომ Gmail-ის 2-Step Verification ჩართულია
-2. გამოიყენე App Password, არა რეგულარული პაროლი
-3. Check firewall settings for SMTP port 587
-
-### Issue 2: JWT Token არ მუშაობს
-**გადაწყვეტა:**
-1. დარწმუნდი რომ `jwt.secret` არის 256-bit (32+ characters)
-2. Check token expiration time
-3. Verify Authorization header format: `Bearer {token}`
-
-### Issue 3: Database Connection Error
-**გადაწყვეტა:**
-1. დარწმუნდი რომ PostgreSQL service გაშვებულია
-2. Check database credentials
-3. Verify database exists: `psql -U postgres -c "\l"`
-
-## 📈 Performance Considerations
-
-### Database Optimization
-- ✅ Indexes დამატებულია frequently queried fields-ზე
-- ✅ Pagination გამოყენებულია list endpoints-ზე
-- ✅ Lazy loading relationships-ზე
-- ✅ Soft delete strategy
-
-### Query Optimization
-- ✅ N+1 problem თავიდან არიდება eager loading-ით სადაც საჭიროა
-- ✅ JPQL queries optimized
-- ✅ Composite indexes critical queries-თვის
-
-## 🔮 სამომავლო გაუმჯობესებები
-
-- [ ] Redis caching frequently accessed data-სთვის
-- [ ] File upload support real music files-თვის (Amazon S3)
-- [ ] WebSocket support real-time notifications-თვის
-- [ ] Advanced search filters (year, duration, etc.)
-- [ ] User followers/following system
-- [ ] Social features (comments, likes)
-- [ ] Payment integration for premium features
-- [ ] Mobile API optimization
-- [ ] GraphQL support
-
-## 📞 Support
-
-**Issues:** GitHub Issues გამოიყენე bugs და feature requests-თვის
-
-**Documentation:** ეს README შეიცავს ყველა საჭირო ინფორმაციას
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
 ## 📄 License
 
-MIT License - თავისუფლად გამოიყენე სასწავლო მიზნებისთვის
+This project is licensed under the MIT License.
 
----
+## 👥 Authors
 
-## 🎓 სასწავლო მიზნები რომელიც მიღწეულია
+- Your Name - Initial work
 
-✅ Spring Boot 3 და Spring Security გამოყენება
-✅ JWT Authentication implementation
-✅ Email integration JavaMailSender-ით
-✅ JPA Relationships და Hibernate
-✅ RESTful API design principles
-✅ Exception Handling best practices
-✅ Unit Testing Mockito-ით (80%+ coverage)
-✅ Scheduled Tasks (@Scheduled)
-✅ Role-Based Access Control (RBAC)
-✅ Soft Delete pattern
-✅ DTOs და Entity mapping
-✅ Pagination და Sorting
-✅ Git Flow methodology
-✅ Clean Code principles
-✅ SOLID principles
+## 🙏 Acknowledgments
 
-## 🚦 Quick Start Guide
-
-### 5 წუთში გაშვება:
-
-```bash
-# 1. Clone & Navigate
-git clone <repo-url>
-cd spotify-clone
-
-# 2. Database Setup
-psql -U postgres
-CREATE DATABASE spotify_clone;
-CREATE USER spotify_user WITH PASSWORD 'spotify_password';
-GRANT ALL PRIVILEGES ON DATABASE spotify_clone TO spotify_user;
-\q
-
-# 3. Configure Application
-# Edit src/main/resources/application.yaml
-# Set your email credentials
-
-# 4. Build & Run
-mvn clean install
-mvn spring-boot:run
-
-# 5. Create Admin User
-psql -U spotify_user -d spotify_clone
--- Paste admin INSERT query from above
-
-# 6. Test
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@spotify.com","password":"Admin123!"}'
-```
-
----
-
-**Made with ❤️ for Learning Spring Boot**
-
-**Version:** 1.0.0  
-**Last Updated:** 2025-01-18
-
----
-
-## 💡 Tips for Developers
-
-### Testing Email Locally
-```java
-// For local testing, use console output instead of real email
-@Profile("dev")
-@Service
-public class ConsoleEmailService extends EmailService {
-    @Override
-    public void sendVerificationEmail(String to, String name, String code) {
-        System.out.println("=== EMAIL ===");
-        System.out.println("To: " + to);
-        System.out.println("Code: " + code);
-        System.out.println("============");
-    }
-}
-```
-
-### Quick Database Reset
-```sql
--- Reset all data
-TRUNCATE TABLE 
-  listening_history, 
-  weekly_statistics, 
-  playlist_music, 
-  playlists, 
-  music, 
-  albums, 
-  users 
-RESTART IDENTITY CASCADE;
-
--- Re-add admin
--- Use admin INSERT query from above
-```
-
-### Postman Collection
-Import to Postman for easy testing:
-```json
-{
-  "info": {
-    "name": "Spotify Clone API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/"
-  },
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Register",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"Password123\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"role\": \"LISTENER\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:8080/api/auth/register",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8080",
-              "path": ["api", "auth", "register"]
-            }
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-## 🎉 დასასრული
+- Spring Boot Documentation
+- Spotify API for inspiration
+- OpenAPI/Swagger for documentation
